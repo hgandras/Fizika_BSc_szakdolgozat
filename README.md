@@ -5,5 +5,5 @@ Kézmozdulat alapú drónvezérlés gépi látással szakdolgozatomhoz tartozó 
 Minden csomagon amelyet használta a pyproject.toml file tartalmazza
 
 ## Szimulációhoz telepítendő programok
-<https://gazebosim.org/> 
-<https://ardupilot.org/dev/docs/using-gazebo-simulator-with-sitl.html> 
+<https://gazebosim.org/>  
+<https://ardupilot.org/dev/docs/using-gazebo-simulator-with-sitl.html>  
