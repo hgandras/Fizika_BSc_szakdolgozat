@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "torchscript_test"
+version = "0.1.0"
+description = ""
+authors = ["hgandras <hgandras@gmaill.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+torch = "^1.10.0"
+numpy = "^1.21.4"
+torchvision = "^0.11.1"
+Pillow = "^8.4.0"
+opencv-python = "^4.5.4"
+tk = "^0.1.0"
+matplotlib = "^3.5.0"
+dronekit = "^2.9.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = {version = "^21.10b0", allow-prereleases = true}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+in-project = true
