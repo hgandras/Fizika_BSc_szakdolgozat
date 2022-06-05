@@ -2,7 +2,7 @@
 Kézmozdulat alapú drónvezérlés gépi látással szakdolgozatomhoz tartozó programok, melyekkel megvalósítottam a képfeldolgozást, és a drón irányításának szimulációját.
 
 ## Dependencyk
-Minden csomag amely használva van, a pyproject.toml file tartalmazza.
+Minden felhasznált csomagot, a pyproject.toml file tartalmaz.
 
 ## Szimulációhoz telepítendő programok
 <https://gazebosim.org/>  
