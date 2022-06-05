@@ -19,25 +19,26 @@ import time
 
 class DetectKP:
     """
-    DetectKP class returns a pretraind Resnet50 person keypointdetection pytorch model.
+    A DetectKP ostály létrehoz egy elére betanított Resnet50 keypoint felismerő pytorch modellt.
 
-    Attributes
-    ----------
+    Osztály változók
+    -----------------
     model: class 'torchvision.models.detection.keypoint_rcnn.KeypointRCNN'
-        The pytorch Resnet50 keypoint rcnn model
+        A pytorch Resnet50 keypoint rcnn modell
 
     thresh: float
-        A float int the [0;1] interval, the thershold of the donfidenco score in model prediction.
+        Egy float a [0;1] intervallumban, amely azt adja meg, hogy mekkora felismerési valószínűségtől keresse a modell az eseteket.
 
     img_tens: torch.Tensor
-        The input image as a pytorch FloatTensor.
+        A bemeneti kép pytorch FloatTensor típusban.
 
     out: list
-        The output of the inference. It includes the keypoint positions,keypoint scores , the confidence scores of the persons, the bboxes,
-        and labels (this is always 1, since the model can only recognize people).
+        Egy lista, ami a kép kiértékelése után tartalmazza a hálózat kimeneteleit. Ez a keypointok pozícióit, a konfidencia értéküket,
+        a felismert emberek konfidencia értékét, a határoló kereteket,
+        és a címkéket jelenti (ez mindig 1, mivel a modell csak embereket képes felismerni).
 
-    connect_skeleton: list containing (1,2) shaped tuples
-        A list that indicates which two keypoints are connected. The order of the keypoints in the used mode is:
+    connect_skeleton: lista, ami (a,b) alakú tuple-ket tartalmaz
+        Egy lista, ami azt jelöli, hogy melyik kulcspont melyik másikhoz kötődik. A keypointok sorrendje az alábbi:
             coco_keypoints = [
             "nose", "left_eye", "right_eye", "left_ear", "right_ear",
             "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
@@ -45,26 +46,29 @@ class DetectKP:
             "left_knee", "right_knee", "left_ankle", "right_ankle",
             ]
 
-    Methods
-    -------
-    load_data(source: str, path: str = "")
-        Loads the data based on the input.
+    Osztály metódusok
+    -----------------
+    load_img_data(source: str, path: str = "")
+        Betölti a képet, amelyet megfelelően átalakít.
+    
+    load_vid_data(frame: np.array):
+        Betölt egy mátrixot, amely képi adatokat tartalmaz, és megfelelően átalakít.
 
     evaluate()
-        Makes an evaluation on the loaded image/images
+        Beadja a képet a neurális hálózatnak, amely elvégzi felismerést.
 
     draw( save: bool = False):
-        Draws the predicted keypoint to the image. Can also save it.
+        Kirajzolja a betöltött képet, és rárajzolja a keypointokat, és a csontvázat.
     """
 
     def __init__(self, thresh: float):
         """
-        Loads the keypoint detection model, and sets up the threshhold for the confidence score.
+        Betölti a keypoint felismerő hálózatot, és beállítja a konfidencia értéket a felismeréshez.
 
-        Parameters
+        Paraméterek
         ----------
         thresh(float):
-            The threshhold for the confidence score.
+            A konfidencia érték a felismeréshez.
         """
         self.model = torchvision.models.detection.keypointrcnn_resnet50_fpn(
             pretrained=True
@@ -115,12 +119,13 @@ class DetectKP:
 
     def load_img_data(self, path: str = ""):
         """
-        Loads the image data based on its source.
+        Betölt egy képet, amit megfelelően átalakít, hogy a hálózatnak be lehessen adni. Ez egy konkrét könyvtárból betöltött
+        egy darab kép feldolgozására használható.
 
-        Parameters
+        Paraméterek
         ----------
         path(str)
-            The path of the image library.
+            A kép elérési útja.
         """
 
         img_int = Image.open(path)  # Beolvasás
@@ -130,30 +135,30 @@ class DetectKP:
         self.img_tens = self.img_tens.to(self.device)  # Adat GPU-ra
 
     def load_vid_data(self, frame: np.array):
+        """
+        Egy képi adatot dolgoz fel, amelyet Pytorch tenzorrá alakít. Ez már használható egy videóbemenet kiértékeléséhez.
+        
+        Paraméterek
+        -----------
+        frame: np.array
+            Képpontok értékeit tartalmazó mátrix.
+        """
         transf = torchvision.transforms.Compose([T.ToTensor()])
         self.img_tens = transf(frame)
         self.img_tens = self.img_tens.to(self.device)
 
     def evaluate(self):
         """
-        Makes an evaluation, and creates self.outs, which contains the evaluation data.
+        Kiértékeli a képet, és létrehozza a sel.outs dict-et, amely a felhasznált kimeneti adatokat tartalmazza.
         """
         self.out["all"] = self.model([self.img_tens])[0]
         self.out["keypoints"] = self.out["all"]["keypoints"]
         self.out["scores"] = self.out["all"]["scores"]
         self.out["bbox"] = self.out["all"]["boxes"]
 
-    def draw(self, save: bool = False, path=""):
+    def draw(self):
         """
-        Draws the keypoints to the image.
-
-        Parameters
-        ----------
-        save(bool):
-            If true, is saves the image to the path given
-
-        path(str):
-            The path for saving the image.
+        Rárajzolja a keypointokat a képre.
         """
 
         ind = torch.where(self.out["scores"] > self.thresh)
@@ -167,13 +172,6 @@ class DetectKP:
         )
 
         img = res.permute(1, 2, 0).numpy()
-
-        # if vid == False:
-        #   cv2.imshow("img", res.permute(1, 2, 0).numpy())
-        #   cv2.waitKey(0)
-        #   if save == True:
-        #       plt.savefig(path)
-        # if vid == True:
         cv2.imshow("vid", img)
 
 
@@ -192,7 +190,7 @@ class Poses(IntEnum):
 class Angles(IntEnum):
 
     """
-    A keresett szögek
+    A keresett szögekre enum
     """
 
     LEFT_ARMPIT = 0
@@ -230,29 +228,29 @@ class Joints(IntEnum):
 class Control(DetectKP):
 
     """
-    Subclass of DetectKP. It is used for recognizing the commands given, based on hand posture, and toggles if it receives commands, or
-    not.
+    DetectKP osztályból öröklődött osztály. Felismeri a parancsokat a keypointok alapján.
 
-    Methods
-    -------
+    Osztály metódusok
+    -----------------
+    IDE CSAK AZOK VANNAK LEÍRVA, AMELYEKET VALÓBAN HASZNÁLNI KELL. A VONÁSSAL KEZDŐDŐ METÓDUSOK CSAK AZ OSZTÁLYON BELÜLI FELHASZNÁLÁSRA VANNAK.
 
+    detect_pose(frame):
+        Bekér egy métrixot, amely a képi adatokat tartalmazza. Ezen meghívja az evaluate metódust. Ennek kimenetei alapján kiszámolja a megfelelő
+        szögeket a pózfelismeréshez.
+        
 
-    Parameters
+    Paraméterek
     -----------
-    _coco_keypoints: list
-        Dont change this, it shows the order of the keypoints in the model outputs.
 
-    current _pose: str
-        Its value is the current handposition detected based on the kps.
+    current _pose: list
+        Az első értéke azt mutatja, hogy kaphat e parancsokat a drón. A második 3 rendre az x,y,z irényokba mutató sebességvektorok 
+        irányát jelenti.
 
     receive_commands: bool
-        Whether the model listens to the commands detected.
+        Egy változó, amely megmondja, hogy a drón kaphat e parancsokat vagy nem
 
     joint_positions: torch tensor
-
-
-    torso_positions: dict
-        Contains the name of the positions, and a number value assigned to it.
+        A keypointok képen való helyeit tartalmazó torch.tensor.
 
     """
 
@@ -265,25 +263,23 @@ class Control(DetectKP):
         self.receive_commands = False
 
         self.joint_positions = self.out["keypoints"]
-        self.vectors = np.zeros((1, 5))  # The positions of arms, and the torso
-        self.angles = np.zeros((1, 4))  # Angles
+        self.vectors = np.zeros((1, 5))  # A vizsgált vektorokat tárolja
+        self.angles = np.zeros((1, 4))  # A szögeket tárolja 
 
-        self.t = []  # Saves time values
-
-        self.prev_bbox_size = None
+        self.t = []  # Idő mérésére
 
         self.velocity = None
         self.bboxes = self.out["bbox"]
 
     def _calculate_angles(self, vecs: np.array):
         """
-        A function that calculates the angles that are used for classyifing a pose. The input is a numpy array,
-        which contains the following joints, and must be int this order: Torso,left shouldes, right shoulder, left elbow, right elbow
+        Kiszámolja a megfelelő szögeket. A bemenet egy array, amelyben a megfelelő vektoroknak
+        az alábbi sorranden kell szerepelnie: Jobb csípő, bal csípő,jobb könyök, bal könyök, jobb csukló, bal csukló,
+        jobb boka, bal boka.
 
-        Returns
+        Visszatérési érték
         --------
         self.angles: numpy array
-
 
         """
 
@@ -303,20 +299,19 @@ class Control(DetectKP):
 
     def _tensor_to_array(self, tensor):
         """
-        Transforms torch.tensor which is grad enabled, and on GPU, to a numpy array.
+        Áttranszformál egy gradienst számoló torch.tensort  ami GPU-n van futtatva, egy numpy array-re.
         """
         arr = tensor.cpu().detach().numpy()
         return arr
 
     def detect_pose(self, frame):
         """
-        Calculate the angle between body and upper arm, and upper arm and lower arm.
+        Kiszámolja a drón irányításához szükséges szögeket.
 
         Parameters
         -----------
 
-        frame: any type that contains image data
-            The image to be processed
+        frame: bármilyen képi adatot tartalmazó típus
         """
 
         self.load_vid_data(frame)
@@ -438,17 +433,9 @@ class Control(DetectKP):
             self.joint_positions = None
 
 
-    def draw(self, bbox: bool = True):
+    def draw(self):
         """
-        Draws the keypoints to the image.
-
-        Parameters
-        ----------
-        save(bool):
-            If true, is saves the image to the path given
-
-        path(str):
-            The path for saving the image.
+        Rárajzolja a keypointokat a képre, és a szögek által meghatározott sebességvektor irányokat.
         """
 
         ind = torch.where(self.out["scores"] > self.thresh)
@@ -515,11 +502,7 @@ class Control(DetectKP):
                     color=(0, 0, 255),
                     thickness=2,
                 )
-            # if bbox == True:
-            #   torchvision.utils.draw_bounding_boxes(
-            #       self.img_tens,
-            #       self.bboxes,
-            #   )
+ 
 
         except TypeError as msg:
             print(msg)
